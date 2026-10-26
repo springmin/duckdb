@@ -21,6 +21,7 @@ JOBS=""
 DO_CLEAN=0
 DO_PACKAGE=0
 DO_STRIP=0
+EXPLICIT_VERSION=""
 
 usage() {
 	cat <<'EOF'
@@ -31,6 +32,7 @@ Options:
   --build-type TYPE    Release (default), RelWithDebInfo or Debug
   --sdk DIR            OHOS SDK native directory (default: newest installed SDK)
   --jobs N             Parallel compile jobs (default: all CPUs)
+  --version VERSION    Version to report, e.g. v2.0.0 (default: git-derived dev version)
   --clean              Remove the build directory before configuring
   --package            Create build/dist/duckdb-<version>-ohos-arm64.tar.gz
   --strip              Strip libduckdb.so (the shell keeps its OHOS code signature)
@@ -67,6 +69,11 @@ while [ $# -gt 0 ]; do
 	--jobs)
 		[ $# -ge 2 ] || die "--jobs requires a value"
 		JOBS="$2"
+		shift 2
+		;;
+	--version)
+		[ $# -ge 2 ] || die "--version requires a value"
+		EXPLICIT_VERSION="$2"
 		shift 2
 		;;
 	--clean)
@@ -163,6 +170,9 @@ echo "    build dir:  $BUILD_DIR"
 echo "    build type: $BUILD_TYPE"
 echo "    jobs:       $JOBS"
 echo "    lld libs:   $LLD_LIB_DIR"
+if [ -n "$EXPLICIT_VERSION" ]; then
+	echo "    version:    $EXPLICIT_VERSION"
+fi
 
 # --- configure and build -----------------------------------------------------
 
@@ -173,6 +183,11 @@ fi
 
 mkdir -p "$BUILD_DIR"
 
+VERSION_ARG=()
+if [ -n "$EXPLICIT_VERSION" ]; then
+	VERSION_ARG=(-DDUCKDB_EXPLICIT_VERSION="$EXPLICIT_VERSION")
+fi
+
 LD_LIBRARY_PATH="$LLD_LIB_DIR" DUCKDB_PLATFORM=linux_arm64_musl cmake -G Ninja \
 	-B "$BUILD_DIR" \
 	-DCMAKE_BUILD_TYPE="$BUILD_TYPE" \
@@ -182,7 +197,8 @@ LD_LIBRARY_PATH="$LLD_LIB_DIR" DUCKDB_PLATFORM=linux_arm64_musl cmake -G Ninja \
 	-DCMAKE_CXX_FLAGS="-fPIC -O2" \
 	-DBUILD_EXTENSIONS=json \
 	-DENABLE_JEMALLOC=ON \
-	-DDUCKDB_EXPLICIT_PLATFORM=linux_arm64_musl
+	-DDUCKDB_EXPLICIT_PLATFORM=linux_arm64_musl \
+	${VERSION_ARG[@]+"${VERSION_ARG[@]}"}
 
 echo "==> building"
 LD_LIBRARY_PATH="$LLD_LIB_DIR" cmake --build "$BUILD_DIR" --parallel "$JOBS"

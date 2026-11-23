@@ -38,9 +38,9 @@ Options:
   --strip              Strip libduckdb.so (the shell keeps its OHOS code signature)
   -h, --help           Show this help
 
-The build always targets aarch64 HarmonyOS using the musl platform
-(DUCKDB_PLATFORM=linux_arm64_musl), with jemalloc and the json extension,
-matching the verified OHOS configuration.
+The build always targets aarch64 HarmonyOS using the musl code paths
+(DUCKDB_PLATFORM=linux_arm64_musl for detection), reports the platform as
+openharmony_arm64, and builds with jemalloc and the json extension.
 EOF
 }
 
@@ -197,7 +197,7 @@ LD_LIBRARY_PATH="$LLD_LIB_DIR" DUCKDB_PLATFORM=linux_arm64_musl cmake -G Ninja \
 	-DCMAKE_CXX_FLAGS="-fPIC -O2" \
 	-DBUILD_EXTENSIONS=json \
 	-DENABLE_JEMALLOC=ON \
-	-DDUCKDB_EXPLICIT_PLATFORM=linux_arm64_musl \
+	-DDUCKDB_EXPLICIT_PLATFORM=openharmony_arm64 \
 	${VERSION_ARG[@]+"${VERSION_ARG[@]}"}
 
 echo "==> building"
